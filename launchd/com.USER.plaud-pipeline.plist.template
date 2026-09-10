@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Portable template. install.sh fills in __HOME__, __NODE__, and __LABEL__ and
+  writes the result to ~/Library/LaunchAgents/. See launchd/com.stefan.plaud-pipeline.plist
+  for a concrete, working example.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>__LABEL__</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__NODE__</string>
+        <string>__HOME__/bin/plaud-pipeline-server.mjs</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PORT</key>
+        <string>8791</string>
+        <key>PLAUD_HTML</key>
+        <string>__HOME__/Desktop/plaud-pipeline.html</string>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>ThrottleInterval</key>
+    <integer>5</integer>
+
+    <key>StandardOutPath</key>
+    <string>__HOME__/Library/Logs/plaud-pipeline.log</string>
+    <key>StandardErrorPath</key>
+    <string>__HOME__/Library/Logs/plaud-pipeline.log</string>
+</dict>
+</plist>

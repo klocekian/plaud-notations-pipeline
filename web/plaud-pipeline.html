@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plaud → Notations upload</title>
+<style>
+  :root{
+    --bg:#0c0f14; --panel:#141a22; --ink:#e8edf4; --muted:#93a0b2;
+    --line:#232c38; --accent:#5b86ff; --accent-ink:#fff;
+    --ok:#1fa971; --run:#f2a33c; --idle:#3a4453; --skip:#3a4453;
+    --code-bg:#0a0d12; --code-ink:#cdd8e8; --err:#e5484d;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1120px;margin:0 auto;padding:32px 20px 64px;}
+  header{display:flex;flex-wrap:wrap;align-items:baseline;gap:12px;margin-bottom:6px;}
+  h1{font-size:22px;margin:0;letter-spacing:-.01em;display:flex;align-items:center;gap:10px;}
+  h1 .logo{width:22px;height:22px;flex:none;color:var(--accent);}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 20px;}
+  a,a:visited{color:var(--accent);text-decoration:none;}
+  a:hover{text-decoration:underline;}
+
+  .banner{display:none;background:color-mix(in srgb,var(--err) 12%,var(--panel));
+    border:1px solid color-mix(in srgb,var(--err) 45%,var(--line));border-radius:12px;
+    padding:12px 16px;margin:0 0 20px;font-size:13px;}
+  .banner code{background:var(--code-bg);color:var(--code-ink);padding:1px 6px;border-radius:5px;
+    font-family:ui-monospace,Menlo,monospace;font-size:12px;}
+
+  .controls{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    box-shadow:var(--shadow);padding:16px;margin:0 0 22px;display:grid;gap:12px;}
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+  label.fld{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--muted);flex:1;min-width:220px;}
+  input[type=text],input[type=number],select{font:inherit;border:1px solid var(--line);
+    background:var(--bg);color:var(--ink);border-radius:9px;padding:8px 10px;}
+  input[type=number]{width:90px}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;}
+  .seg button{border:0;border-radius:0;background:var(--panel);padding:8px 14px;}
+  .seg button.on{background:var(--accent);color:var(--accent-ink);}
+  .chk{display:inline-flex;gap:7px;align-items:center;font-size:13px;color:var(--ink);}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);
+    color:var(--ink);border-radius:10px;padding:9px 15px;transition:.15s;}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600;}
+  button.primary:disabled{opacity:.5;cursor:default}
+
+  /* dropdown + reload + choose-file, all in one row */
+  .withbtn{display:flex;gap:8px;align-items:stretch;}
+  .withbtn select{flex:1;min-width:0;}
+  .withbtn #refresh{flex:none;display:grid;place-items:center;padding:0;width:40px;}
+  .withbtn #fileBtn{flex:none;font-size:13px;white-space:nowrap;}
+  .ic{width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none;
+    stroke-linecap:round;stroke-linejoin:round;display:block;}
+  .chip{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);
+    background:color-mix(in srgb,var(--accent) 12%,transparent);
+    border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));border-radius:20px;padding:4px 6px 4px 12px;}
+  .chip b{color:var(--ink);font-weight:600;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .chip #fileClear{padding:0;width:20px;height:20px;border-radius:50%;line-height:1;font-size:12px;
+    display:grid;place-items:center;color:var(--muted);}
+  .chip #fileClear:hover{color:var(--ink);border-color:var(--accent);}
+
+  /* --- progress card (header) + live output (body), one container --- */
+  .tracewrap{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    box-shadow:var(--shadow);overflow:hidden;}
+  .cardtop{padding:16px 18px 14px;}
+  .thead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 13px;}
+  .clearbtn{flex:none;padding:5px 12px;font-size:13px;color:var(--muted);}
+  .tnow{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;min-width:0;
+    letter-spacing:-.01em;color:var(--ink);}
+  .tnow #tnowtxt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  /* running = accent spinner (clear "in progress"); done = green; error = red */
+  .tnowdot{flex:none;width:14px;height:14px;border-radius:50%;background:var(--idle);transition:.25s;position:relative;}
+  .tnow.run .tnowdot{background:transparent;border:2px solid color-mix(in srgb,var(--accent) 30%,transparent);
+    border-top-color:var(--accent);animation:spin .7s linear infinite;}
+  .tnow.done .tnowdot{background:var(--ok);}
+  .tnow.done .tnowdot::before{content:"";position:absolute;left:4px;top:1px;width:3px;height:7px;
+    border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);}
+  .tnow.err .tnowdot{background:var(--err);}
+  .tnow.err{color:var(--err);}
+  .tsub{font-size:12px;font-weight:500;color:var(--muted);margin-left:2px;}
+
+  .pbar{height:8px;border-radius:99px;overflow:hidden;
+    background:color-mix(in srgb,var(--muted) 16%,transparent);}
+  .pfill{height:100%;width:0;border-radius:99px;background:var(--accent);
+    transition:width .5s ease, background .3s;}
+  .pfill.run{background:linear-gradient(90deg,
+      color-mix(in srgb,var(--accent) 55%,#fff), var(--accent),
+      color-mix(in srgb,var(--accent) 55%,#fff));
+    background-size:200% 100%;animation:shimmer 1.4s linear infinite;}
+  .pfill.done{background:var(--ok);} .pfill.err{background:var(--err);}
+  @keyframes shimmer{0%{background-position:200% 0}100%{background-position:0 0}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .tmeta{margin:14px 0 0;font-size:12px;color:var(--muted);}
+  .tmeta code{background:var(--code-bg);color:var(--code-ink);padding:1px 6px;border-radius:5px;
+    font-family:ui-monospace,Menlo,monospace;font-size:12px;}
+
+  .term{background:var(--code-bg);border-top:1px solid var(--line);}
+  .term .head{display:flex;align-items:center;gap:8px;padding:9px 18px;border-bottom:1px solid rgba(255,255,255,.06);}
+  .term .head span.t{color:#8b98ad;font-size:12px;font-family:ui-monospace,Menlo,monospace;}
+  .term pre{margin:0;padding:14px 18px;max-height:260px;overflow:auto;color:var(--code-ink);
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.55;white-space:pre-wrap;}
+  .term pre .err{color:#ff7b7b;}
+  .out{margin-top:14px;font-size:13px;color:var(--muted);}
+  .out b{color:var(--ink);} .out code{background:var(--code-bg);color:var(--code-ink);padding:1px 6px;border-radius:5px;
+    font-family:ui-monospace,Menlo,monospace;font-size:12px;}
+  footer{margin-top:26px;color:var(--muted);font-size:12px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>
+    <svg class="logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="9" y="2" width="6" height="12" rx="3"></rect>
+      <path d="M5 10a7 7 0 0 0 14 0"></path>
+      <line x1="12" y1="17" x2="12" y2="21"></line>
+      <line x1="8" y1="21" x2="16" y2="21"></line>
+    </svg>Plaud → Notations upload</h1></header>
+  <p class="sub">grab a device recording → <b>transcribe (real, local Whisper)</b> → upload transcript + AI-summary companion</p>
+
+  <div class="banner" id="banner">
+    This page is open as a <b>file</b>, so the Run button can't reach the script. The server runs on its own as a
+    login service — just open <a href="http://localhost:8791" style="color:inherit;font-weight:600">http://localhost:8791</a>.
+    <br>If it's not up: <code>launchctl kickstart -k gui/$(id -u)/com.stefan.plaud-pipeline</code>
+  </div>
+
+  <div class="controls">
+    <div class="row">
+      <label class="fld" style="flex:2"><span>Pick a Plaud recording, or choose a local file</span>
+        <div class="withbtn">
+          <select id="recSel"><option value="">Loading recordings from Plaud…</option></select>
+          <button id="refresh" title="Reload the list from Plaud" aria-label="Reload list">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+          </button>
+          <button type="button" id="fileBtn" title="Transcribe a local audio file instead">Choose file…</button>
+          <input type="file" id="fileInput" accept="audio/*,video/*" hidden>
+        </div></label>
+      <label class="fld"><span>Title (blank = use recording name)</span>
+        <input type="text" id="title" placeholder="Team meeting 8/10/26"></label>
+    </div>
+    <div class="row" id="filechip" style="display:none">
+      <span class="chip">Using file: <b id="fileName"></b> <button type="button" id="fileClear" aria-label="Use a Plaud recording instead">✕</button></span>
+    </div>
+    <div class="row">
+      <label class="chk"><input type="checkbox" id="diarize"> Diarize (speakers)</label>
+      <label class="chk">count <input type="number" id="speakers" min="1" max="12" placeholder="4" style="width:64px"></label>
+      <label class="chk"><input type="checkbox" id="upload" checked> Upload to Notations</label>
+      <button class="primary" id="run" style="margin-left:auto">▶ Grab &amp; transcribe</button>
+    </div>
+  </div>
+
+  <div class="tracewrap">
+    <div class="cardtop">
+      <div class="thead">
+        <div class="tnow" id="tnow"><span class="tnowdot" id="tnowdot"></span><span id="tnowtxt">Idle — pick a recording and run</span></div>
+        <button id="reset" class="clearbtn" title="Clear the progress display">Clear</button>
+      </div>
+      <div class="pbar"><div class="pfill" id="pfill"></div></div>
+      <p class="tmeta">Plaud MCP → <code>~/bin/plaud-transcribe.sh</code> (~90s/hr) → Notations <code>Meetings</code> · draft</p>
+      <div class="out" id="out" style="display:none"></div>
+    </div>
+    <div class="term">
+      <div class="head"><span class="t" id="termTitle">plaud-transcribe.sh — live output</span></div>
+      <pre id="term">Idle. Pick a Plaud recording or choose a local audio file, then run.</pre>
+    </div>
+  </div>
+
+  <footer>
+    One button: <b>grab → transcribe → upload</b>. Transcripts saved to <code>~/Documents/plaud-runs/</code> and filed as
+    drafts in Notations <code>Meetings</code>. The AI-summary companion (<code>add_iteration</code>) is added by Claude —
+    it needs an LLM. Diarize: always pass the real speaker count (auto over-clusters).
+    <br><a href="/setup">Requirements &amp; setup →</a>
+  </footer>
+</div>
+
+<script>
+  const $ = (s) => document.querySelector(s);
+  const isServed = location.protocol.startsWith("http");
+  if (!isServed) $("#banner").style.display = "block";
+
+  // Source is inferred from the user's last action: choosing a file switches to
+  // file mode; touching the recording dropdown switches back to Plaud.
+  let pickedFile = null;
+  function setRunLabel() { $("#run").textContent = pickedFile ? "▶ Transcribe file" : "▶ Grab & transcribe"; }
+  function clearFile() {
+    pickedFile = null; $("#fileInput").value = "";
+    $("#filechip").style.display = "none"; setRunLabel();
+  }
+  $("#fileBtn").onclick = () => $("#fileInput").click();
+  $("#fileInput").onchange = (e) => {
+    pickedFile = e.target.files[0] || null;
+    if (pickedFile) { $("#fileName").textContent = pickedFile.name; $("#filechip").style.display = ""; }
+    else { $("#filechip").style.display = "none"; }
+    setRunLabel();
+  };
+  $("#fileClear").onclick = clearFile;
+  $("#recSel").onchange = () => { if (pickedFile) clearFile(); }; // picking a recording overrides a chosen file
+
+  // --- populate the recordings dropdown from Plaud (the Grab list) ----------
+  function fmtDur(ms){ const s=Math.round(ms/1000); return s>=3600?`${Math.floor(s/3600)}h${String(Math.floor(s%3600/60)).padStart(2,"0")}m`:`${Math.floor(s/60)}m${String(s%60).padStart(2,"0")}s`; }
+  function fmtDate(iso){ if(!iso) return ""; const d=new Date(iso); return isNaN(d)?iso:d.toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}); }
+  async function loadRecordings(){
+    const sel=$("#recSel");
+    sel.innerHTML='<option value="">Loading recordings from Plaud…</option>';
+    try{
+      const j=await (await fetch("/recordings",{cache:"no-store"})).json();
+      if(!j.ok) throw new Error(j.error||"grab failed");
+      const rows=(j.recordings||[]).filter(r=>!r.skip);
+      if(!rows.length){ sel.innerHTML='<option value="">No recordings ≥60s found</option>'; return; }
+      sel.innerHTML=rows.map((r,i)=>{
+        const label=`${r.untitled?"· ":""}${r.name}  —  ${fmtDate(r.date)} · ${fmtDur(r.duration)}`;
+        return `<option value="${r.id}"${i===0?" selected":""}>${esc(label)}</option>`;
+      }).join("");
+    }catch(e){
+      sel.innerHTML=`<option value="">✗ ${esc(e.message)}</option>`;
+    }
+  }
+  $("#refresh").onclick = loadRecordings;
+
+  const tnow = document.getElementById("tnow"), tnowtxt = document.getElementById("tnowtxt");
+  const pfill = document.getElementById("pfill");
+
+  // Overall progress (0–100). Weighted so whisper (the long pole) dominates.
+  // A "run" step counts half; "skip" counts full so no-diarize / no-upload runs
+  // still reach 100.
+  const W = { download: 12, convert: 12, whisper: 45, diarize: 12, write: 9, upload: 10 };
+  function progressPct(st, u, wp) {
+    let sum = 0;
+    for (const k of ["download", "convert", "whisper", "diarize", "write"]) {
+      const s = st.steps?.[k] ?? "idle";
+      if (s === "done" || s === "skip") sum += W[k];
+      else if (s === "run") sum += (k === "whisper" && wp != null) ? W[k] * (wp / 100) : W[k] * 0.5;
+    }
+    if (u.state === "done" || u.state === "skip") sum += W.upload; else if (u.state === "run") sum += W.upload * 0.5;
+    if (st.running && sum === 0) sum = 4; // grab head-start before transcribe reports
+    return Math.min(100, Math.round(sum));
+  }
+
+  // Turn the latest server log lines into a friendly micro-step + whisper %.
+  function liveDetail(st) {
+    const logs = st.log || [];
+    let wp = null;
+    for (let i = logs.length - 1; i >= 0; i--) { const m = logs[i].match(/progress\s*=\s*(\d+)%/); if (m) { wp = +m[1]; break; } }
+    for (let i = logs.length - 1; i >= 0; i--) {
+      const l = logs[i];
+      if (/^\[1\/4\].*Using local/.test(l)) return { step: "Reading audio file", wp: null };
+      if (/^\[1\/4\]/.test(l)) return { step: "Downloading audio", wp: null };
+      if (/^\[2\/4\]/.test(l)) return { step: "Converting to 16 kHz WAV", wp: null };
+      if (/^\[3\/4\]/.test(l)) return { step: "Transcribing (whisper small.en)", wp };
+      if (/^\[3b\]/.test(l)) return { step: "Labeling speakers", wp: null };
+      if (/^\[3c\]/.test(l)) return { step: "Building utterances", wp: null };
+      if (/^\[4\/4\]/.test(l)) return { step: "Writing note", wp: null };
+      if (/^\[upload\].*create_post/.test(l)) return { step: "Uploading to Notations", wp: null };
+    }
+    return { step: null, wp };
+  }
+
+  function applyState(st) {
+    const u = st.upload || { state: "idle" };
+    const allDone = ["download", "convert", "whisper", "diarize", "write"]
+      .every((k) => { const s = st.steps?.[k] ?? "idle"; return s === "done" || s === "skip"; });
+
+    const term = $("#term");
+    if (st.log?.length) {
+      term.innerHTML = st.log.map((l) =>
+        /WARN|ERROR|exited|error/i.test(l) ? `<span class="err">${esc(l)}</span>` : esc(l)
+      ).join("\n");
+      term.scrollTop = term.scrollHeight;
+    }
+
+    // Dynamic caption: what's happening right now, down to the micro-step.
+    const d = liveDetail(st);
+    let phase = "idle", text = "Idle — pick a recording and run";
+    if (st.error) { phase = "err"; text = "✗ " + st.error; }
+    else if (u.state === "error") { phase = "err"; text = "✗ Upload failed — " + (u.error || ""); }
+    else if (st.running && u.state === "run") { phase = "run"; text = "Uploading to Notations…"; }
+    else if (st.running && d.step) { phase = "run"; text = d.step + (d.wp != null ? ` — ${d.wp}%` : "…"); }
+    else if (st.running) { phase = "run"; text = "Grabbing from Plaud…"; }
+    else if (u.state === "done") { phase = "done"; text = "✓ Filed in Notations — draft in Meetings"; }
+    else if (allDone && st.out) { phase = "done"; text = "✓ Transcript written"; }
+    tnow.classList.remove("run", "done", "err");
+    if (phase !== "idle") tnow.classList.add(phase);
+    tnowtxt.textContent = text;
+
+    // Progress bar.
+    pfill.classList.remove("run", "done", "err");
+    if (phase === "err") { pfill.classList.add("err"); }
+    else if (phase === "done") { pfill.classList.add("done"); pfill.style.width = "100%"; }
+    else if (st.running) { pfill.classList.add("run"); pfill.style.width = progressPct(st, u, d.wp) + "%"; }
+    else { pfill.style.width = "0"; }
+
+    const out = $("#out");
+    if (!st.running && st.out && allDone && !st.error) {
+      out.style.display = "block";
+      let msg = `<b>Transcript</b> <code>${esc(st.out)}</code>`;
+      if (u.state === "done" && u.slug) msg += ` → <b>filed in Notations</b>: <a href="https://notations.app/posts/${esc(u.slug)}" target="_blank">/posts/${esc(u.slug)}</a>. Ask Claude to add the AI-summary companion.`;
+      else if (u.state === "error") msg += ` — <b style="color:var(--err)">upload failed:</b> ${esc(u.error || "")}`;
+      else if (u.state === "skip") msg += ` — upload skipped.`;
+      out.innerHTML = msg;
+    } else out.style.display = "none";
+
+    $("#run").disabled = !!st.running;
+    $("#run").textContent = st.running ? "Running…" : (pickedFile ? "▶ Transcribe file" : "▶ Grab & transcribe");
+  }
+  const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+
+  function setErr(msg) {
+    tnow.classList.remove("run", "done"); tnow.classList.add("err");
+    tnowtxt.textContent = "✗ " + msg;
+    pfill.classList.remove("run", "done"); pfill.classList.add("err"); pfill.style.width = "100%";
+  }
+  function setBusy(msg) {
+    tnow.classList.remove("done", "err"); tnow.classList.add("run");
+    tnowtxt.textContent = msg;
+    pfill.classList.remove("done", "err"); pfill.classList.add("run"); pfill.style.width = "5%";
+  }
+
+  let poll = null;
+  function startPoll() { if (poll) return; poll = setInterval(tick, 700); tick(); }
+  async function tick() {
+    try {
+      const st = await (await fetch("/status", { cache: "no-store" })).json();
+      applyState(st);
+      if (!st.running && poll) { clearInterval(poll); poll = null; }
+    } catch (e) { clearInterval(poll); poll = null; }
+  }
+
+  $("#run").onclick = async () => {
+    if (!isServed) { $("#banner").style.display = "block"; $("#banner").scrollIntoView({ behavior: "smooth" }); return; }
+    const common = { title: $("#title").value, diarize: $("#diarize").checked,
+                     speakers: $("#speakers").value ? Number($("#speakers").value) : null,
+                     upload: $("#upload").checked };
+    $("#run").disabled = true;
+    try {
+      let r;
+      if (!pickedFile) {
+        const fileId = $("#recSel").value;
+        if (!fileId) { setErr("Pick a recording or choose a file first"); $("#run").disabled = false; return; }
+        setBusy("Grabbing from Plaud…");
+        r = await fetch("/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileId, ...common }) });
+      } else {
+        setBusy("Uploading file…");
+        r = await fetch("/run-upload", { method: "POST", body: pickedFile, headers: {
+          "Content-Type": "application/octet-stream",
+          "X-Filename": encodeURIComponent(pickedFile.name),
+          "X-Title": encodeURIComponent(common.title || ""),
+          "X-Diarize": common.diarize ? "1" : "0",
+          "X-Speakers": common.speakers ? String(common.speakers) : "",
+          "X-Upload": common.upload ? "1" : "0",
+        } });
+      }
+      const j = await r.json();
+      if (!j.ok) { setErr(j.error || "failed"); $("#run").disabled = false; return; }
+      startPoll();
+    } catch (e) { setErr(e.message); $("#run").disabled = false; }
+  };
+  $("#reset").onclick = async () => {
+    if (isServed) { try { await fetch("/reset", { method: "POST" }); } catch {} }
+    tnow.classList.remove("run", "done", "err");
+    tnowtxt.textContent = "Idle — pick a recording and run";
+    pfill.classList.remove("run", "done", "err"); pfill.style.width = "0";
+    $("#term").textContent = "Idle. Pick a Plaud recording or a local audio file, then run.";
+    $("#out").style.display = "none";
+  };
+
+  // On load: fill the recordings dropdown and reflect any in-progress run.
+  if (isServed) { loadRecordings(); tick(); }
+</script>
+</body>
+</html>

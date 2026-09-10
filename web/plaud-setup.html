@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plaud → Notations upload — Setup</title>
+<style>
+  :root{
+    --bg:#0c0f14; --panel:#141a22; --ink:#e8edf4; --muted:#93a0b2;
+    --line:#232c38; --accent:#5b86ff; --accent-ink:#fff; --ok:#1fa971;
+    --code-bg:#0a0d12; --code-ink:#cdd8e8;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1120px;margin:0 auto;padding:32px 20px 72px;}
+  a,a:visited{color:var(--accent);text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  .back,.back:visited{font-size:13px;color:var(--muted);}
+  .back:hover{color:var(--accent);}
+  h1{font-size:24px;margin:14px 0 4px;letter-spacing:-.01em;}
+  .sub{color:var(--muted);margin:0 0 28px;}
+  h2{font-size:15px;letter-spacing:.02em;margin:30px 0 12px;
+    text-transform:uppercase;color:var(--muted);font-weight:700;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    box-shadow:var(--shadow);padding:6px 20px;margin:0 0 8px;}
+  ul.req{list-style:none;margin:0;padding:0;}
+  ul.req li{display:flex;gap:12px;align-items:flex-start;padding:13px 0;border-bottom:1px solid var(--line);}
+  ul.req li:last-child{border-bottom:0;}
+  ul.req .ico{flex:none;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;
+    background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);}
+  ul.req .ico.opt{background:color-mix(in srgb,var(--muted) 16%,transparent);color:var(--muted);}
+  ul.req .ico svg{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none;
+    stroke-linecap:round;stroke-linejoin:round;}
+  ul.req b{font-weight:600;} ul.req .d{color:var(--muted);font-size:13px;}
+  code{background:var(--code-bg);color:var(--code-ink);padding:1px 6px;border-radius:5px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;}
+  .prompt{position:relative;background:var(--code-bg);border:1px solid var(--line);border-radius:14px;
+    overflow:hidden;}
+  .prompt .bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.06);}
+  .prompt .bar .t{color:#8b98ad;font-size:12px;font-family:ui-monospace,Menlo,monospace;margin-right:auto;}
+  .prompt pre{margin:0;padding:16px;overflow-x:auto;color:var(--code-ink);white-space:pre-wrap;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);
+    color:var(--ink);border-radius:9px;padding:6px 13px;transition:.15s;font-size:13px;}
+  button:hover{border-color:var(--accent);}
+  button.ok{border-color:var(--ok);color:var(--ok);}
+  .note{color:var(--muted);font-size:13px;margin:10px 2px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="/">← Back to the pipeline</a>
+  <h1>Setup &amp; requirements</h1>
+  <p class="sub">What this local pipeline needs, and a one-shot Claude Code prompt that installs it all.</p>
+
+  <h2>Requirements</h2>
+  <div class="card">
+    <ul class="req">
+      <li><span class="ico"><svg viewBox="0 0 24 24"><path d="M12 2l8.5 5v10L12 22 3.5 17V7z"/></svg></span><div><b>Node 18+</b> <span class="d">— runs the local server and the Plaud MCP (<code>npx @plaud-ai/mcp</code>).</span></div></li>
+      <li><span class="ico"><svg viewBox="0 0 24 24"><line x1="4" y1="10" x2="4" y2="14"/><line x1="8" y1="7" x2="8" y2="17"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="16" y1="7" x2="16" y2="17"/><line x1="20" y1="10" x2="20" y2="14"/></svg></span><div><b>ffmpeg</b> <span class="d">— converts audio to 16 kHz mono WAV. <code>brew install ffmpeg</code></span></div></li>
+      <li><span class="ico"><svg viewBox="0 0 24 24"><line x1="5" y1="7" x2="19" y2="7"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="17" x2="13" y2="17"/></svg></span><div><b>whisper.cpp</b> (<code>whisper-cli</code>) <span class="d">— local transcription. <code>brew install whisper-cpp</code></span></div></li>
+      <li><span class="ico"><svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><line x1="12" y1="13" x2="12" y2="22"/></svg></span><div><b>Whisper model</b> <span class="d">— <code>ggml-small.en.bin</code> at <code>~/.config/claude-watch/models/</code></span></div></li>
+      <li><span class="ico"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg></span><div><b>Plaud login</b> <span class="d">— one-time browser OAuth; token auto-refreshes at <code>~/.plaud/tokens-mcp.json</code></span></div></li>
+      <li><span class="ico"><svg viewBox="0 0 24 24"><circle cx="7" cy="16" r="3.5"/><line x1="9.5" y1="13.5" x2="20" y2="3"/><line x1="16" y1="7" x2="19" y2="10"/><line x1="13" y1="10" x2="16" y2="13"/></svg></span><div><b>Notations token</b> <span class="d">— the app's MCP token, via <code>NOTATIONS_TOKEN</code> / <code>FIELDLINES_TOKEN</code>, or reused from the plaud-sync agent. Endpoint <code>notations.app/api/mcp/mcp</code></span></div></li>
+      <li><span class="ico opt"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg></span><div><b>Diarization</b> <span class="d">(optional) — sherpa-onnx venv at <code>~/.config/plaud-diarize/</code> + <code>~/bin/plaud-diarize.py</code>. Only needed for speaker labels.</span></div></li>
+      <li><span class="ico opt"><svg viewBox="0 0 24 24"><path d="M12 3l1.6 4.2L18 9l-4.4 1.8L12 15l-1.6-4.2L6 9l4.4-1.8z"/><path d="M18 14l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></span><div><b>AI summary</b> <span class="d">(optional) — the <code>add_iteration</code> companion is added by Claude; it needs an LLM, so it isn't automated by the server.</span></div></li>
+    </ul>
+  </div>
+
+  <h2>Files this uses</h2>
+  <div class="card">
+    <ul class="req">
+      <li><span class="ico"><svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/></svg></span><div><code>~/Desktop/plaud-pipeline.html</code> <span class="d">— the UI (this app).</span></div></li>
+      <li><span class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span><div><code>~/bin/plaud-pipeline-server.mjs</code> <span class="d">— zero-dep server: grab (Plaud MCP), transcribe, upload (Notations MCP).</span></div></li>
+      <li><span class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3"/><line x1="13" y1="15" x2="17" y2="15"/></svg></span><div><code>~/bin/plaud-transcribe.sh</code> <span class="d">— download → ffmpeg → whisper → formatted note.</span></div></li>
+      <li><span class="ico"><svg viewBox="0 0 24 24"><path d="M12 2c3 2.5 4.5 6 4.5 9.5L15 16H9l-1.5-4.5C7.5 8 9 4.5 12 2z"/><circle cx="12" cy="9" r="1.4"/><path d="M9 16l-2 4M15 16l2 4"/></svg></span><div><code>~/Library/LaunchAgents/com.stefan.plaud-pipeline.plist</code> <span class="d">— login service on port 8791 (RunAtLoad + KeepAlive).</span></div></li>
+    </ul>
+  </div>
+
+  <h2>Install it with Claude Code</h2>
+  <p class="note">Paste this into Claude Code. It will install the prerequisites and wire up the service.</p>
+  <div class="prompt">
+    <div class="bar"><span class="t">claude-code-install-prompt</span>
+      <button id="copy">Copy</button></div>
+    <pre id="promptText">Set up the "Plaud → Notations upload" local pipeline on this Mac.
+
+1. Install prerequisites (Homebrew): `brew install ffmpeg whisper-cpp`. Confirm Node 18+ is present.
+2. Download the Whisper model ggml-small.en to ~/.config/claude-watch/models/ggml-small.en.bin.
+3. Ensure these files exist (create if missing):
+   - ~/bin/plaud-transcribe.sh  (download|--audio -> ffmpeg 16kHz mono WAV -> whisper-cli small.en -> formatted Markdown note; optional --diarize --speakers N via sherpa-onnx).
+   - ~/bin/plaud-pipeline-server.mjs  (zero-dep Node HTTP server: serves the UI; GET /recordings and POST /run drive the Plaud MCP via `npx -y @plaud-ai/mcp@latest`; POST /run-upload accepts a browser-picked file; on success it POSTs create_post to the Notations MCP at https://notations.app/api/mcp/mcp, folder "Meetings", tags plaud/recording, published:false).
+   - ~/Desktop/plaud-pipeline.html and ~/Desktop/plaud-setup.html  (the UI + this page).
+   Make plaud-transcribe.sh executable.
+4. Log into Plaud once: `npx -y @plaud-ai/mcp@latest install` (browser OAuth; token stored at ~/.plaud/tokens-mcp.json, auto-refreshes).
+5. Provide the Notations MCP token. The server reads NOTATIONS_TOKEN, else FIELDLINES_TOKEN, else the FIELDLINES_TOKEN inside ~/Library/LaunchAgents/com.fieldlines.plaud-sync.plist (the app's static MCP_API_TOKEN). Ensure one is available.
+6. Install a launchd LaunchAgent com.stefan.plaud-pipeline that runs `/opt/homebrew/bin/node ~/bin/plaud-pipeline-server.mjs` with EnvironmentVariables PORT=8791 and PLAUD_HTML=~/Desktop/plaud-pipeline.html, RunAtLoad + KeepAlive true, logging to ~/Library/Logs/plaud-pipeline.log. Bootstrap it and verify http://localhost:8791 returns 200 and /recordings lists my Plaud recordings.
+7. Optional: set up sherpa-onnx diarization in ~/.config/plaud-diarize/venv with ~/bin/plaud-diarize.py for speaker labels.
+
+Note: port 8787 may be taken by another app — use 8791. Report anything that failed and how to finish it.</pre>
+  </div>
+</div>
+
+<script>
+  const btn = document.getElementById("copy");
+  btn.onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById("promptText").textContent);
+      btn.textContent = "✓ Copied"; btn.classList.add("ok");
+      setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("ok"); }, 1600);
+    } catch { btn.textContent = "Select & ⌘C"; }
+  };
+</script>
+</body>
+</html>

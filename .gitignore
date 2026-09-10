@@ -1,0 +1,16 @@
+# Secrets & tokens — never commit
+*.token
+.env
+.env.*
+
+# Local runtime artifacts
+plaud-runs/
+*.log
+
+# Whisper / diarization models (large binaries, downloaded per-machine)
+models/
+*.bin
+*.onnx
+
+# OS cruft
+.DS_Store
