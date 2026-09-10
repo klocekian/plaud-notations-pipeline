@@ -1,5 +1,10 @@
 # Plaud → Notations Pipeline
 
+![platform: macOS](https://img.shields.io/badge/platform-macOS-000?logo=apple&logoColor=white)
+![transcription: local Whisper](https://img.shields.io/badge/transcription-local%20Whisper-5b86ff)
+![dependencies: zero (Node 18+)](https://img.shields.io/badge/deps-zero%20(Node%2018%2B)-1fa971)
+![license: MIT](https://img.shields.io/badge/license-MIT-blue)
+
 One button that turns a **Plaud voice recording** into a **searchable, formatted meeting note filed in Notations** — with a real, local transcript. No cloud transcription service, no copy-pasting, no manual formatting.
 
 Grab a recording → transcribe it on your own Mac with Whisper → upload the transcript (plus an optional AI-summary companion) to your Notations "Meetings" folder as a draft. All from a single local web page.
@@ -96,3 +101,9 @@ Optional (speaker labels): a sherpa-onnx venv at `~/.config/plaud-diarize/` with
 - **Privacy:** transcription and diarization are 100% local. Only the recording download (from your own Plaud account) and the final note upload (to your own Notations) touch the network.
 - **The AI-summary companion** (`add_iteration`) mentioned in the UI is added by Claude, not the server — it needs an LLM, so it's a deliberate manual step.
 - **Diarization tip:** always pass the real speaker count. Auto-detect over-clusters badly (it'll happily invent 88 speakers on a 4-person call).
+
+---
+
+## License
+
+[MIT](LICENSE) © 2026 Stefan Klocek
