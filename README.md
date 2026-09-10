@@ -9,6 +9,8 @@ One button that turns a **Plaud voice recording** into a **searchable, formatted
 
 Grab a recording → transcribe it on your own Mac with Whisper → upload the transcript (plus an optional AI-summary companion) to your Notations "Meetings" folder as a draft. All from a single local web page.
 
+![The Plaud → Notations UI after a completed run: recording picker, options, a green "Transcript written" status, and live Whisper output.](docs/screenshot.png)
+
 ---
 
 ## What it does, from the user's side
